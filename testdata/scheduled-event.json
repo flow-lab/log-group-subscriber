@@ -1,0 +1,13 @@
+{
+  "version": "0",
+  "id": "316f99b0-29af-0cae-51d7-4b325762c32d",
+  "detail-type": "Scheduled Event",
+  "source": "aws.events",
+  "account": "111111111111",
+  "time": "2018-03-22T11:46:11Z",
+  "region": "eu-west-1",
+  "resources": [
+    "arn:aws:events:eu-west-1:111111111111:rule/RunRule"
+  ],
+  "detail": {}
+}
