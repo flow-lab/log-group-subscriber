@@ -1,0 +1,18 @@
+{
+  "logGroups": [
+    {
+      "logGroupName": "/aws/lambda/TestGroup0",
+      "creationTime": 1519376958519,
+      "metricFilterCount": 0,
+      "arn": "arn:aws:logs:eu-west-1:111111111111:log-group:/aws/lambda/TestGroup0:*",
+      "storedBytes": 14417
+    },
+    {
+      "logGroupName": "/aws/lambda/TestGroup1",
+      "creationTime": 1519376958519,
+      "metricFilterCount": 0,
+      "arn": "arn:aws:logs:eu-west-1:111111111111:log-group:/aws/lambda/TestGroup1:*",
+      "storedBytes": 14417
+    }
+  ]
+}
