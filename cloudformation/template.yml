@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Lambda function that creates log groups subscription filters to lambda funtion
+
+Parameters:
+  FunctionName:
+    Description: Destination function name
+    Type: String
+  DeploymentBucket:
+    Description: Deployment bucket name
+    Type: String
+
+Resources:
+  SubscriberFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+            Action: ['sts:AssumeRole']
+      Policies:
+        - PolicyName: cloudwatch-logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:*'
+                Resource: '*'
+
+  SubscriberFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: !Sub 's3://${deployment-bucket}/log-group-subscriber/deployment.zip'
+      MemorySize: 128
+      Description: Subscribes log streams to datadog logs function
+      Handler: main
+      Runtime: go1.x
+      Timeout: 30
+      Role: !GetAtt SubscriberFunctionRole.Arn
+      Environment:
+        Variables:
+          DESTINATION_FUNCTION_ARN: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${FunctionName}'
+      Events:
+        ScheduleSubscribeFunction:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)

@@ -10,32 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//func TestHandler(t *testing.T) {
-//	var scheduledEvent events.CloudWatchEvent
-//	var inputJson = readJsonFromFile(t, "testdata/scheduled-event.json")
-//
-//	var err = json.Unmarshal(inputJson, &scheduledEvent)
-//	check(t, err)
-//
-//	tests := []struct {
-//		request events.CloudWatchEvent
-//		expect  string
-//		err     error
-//	}{
-//		{
-//			request: scheduledEvent,
-//			expect:  "Event processed",
-//			err:     nil,
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		response, err := main.Handler(test.request)
-//		assert.IsType(t, test.err, err)
-//		assert.Equal(t, test.expect, response)
-//	}
-//}
-
 func TestGetLogGroups(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
@@ -49,7 +23,8 @@ func TestGetLogGroups(t *testing.T) {
 func TestDescribeSubscriptionFilters(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
-	subscriptionFilters, err := main.DescribeSubscriptionFilters(cwl)
+	filterNamePrefix := "test"
+	subscriptionFilters, err := main.DescribeSubscriptionFilters(&filterNamePrefix,cwl)
 
 	check(t, err)
 	assert.Equal(t, 1, len(subscriptionFilters.SubscriptionFilters))
@@ -58,10 +33,10 @@ func TestDescribeSubscriptionFilters(t *testing.T) {
 func TestPutSubscriptionFilter(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
-	res, err := main.PutSubscriptionFilter(cwl)
+	var logGroups []main.LogGroup
+	main.PutSubscriptionFilter(logGroups, cwl)
 
-	check(t, err)
-	assert.NotNil(t, res)
+	// TODO [grokrz]: implement
 }
 
 func check(t *testing.T, err error) {
