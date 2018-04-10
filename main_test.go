@@ -1,13 +1,13 @@
 package main_test
 
 import (
-	"testing"
+	"encoding/json"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log-group-subscriber"
-	"encoding/json"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestProcessEvent(t *testing.T) {
@@ -104,7 +104,7 @@ func (m *mockCloudWatchLogsClient) PutSubscriptionFilter(input *cloudwatchlogs.P
 	return &cloudwatchlogs.PutSubscriptionFilterOutput{}, nil
 }
 
-func readFile(path string) ([]byte) {
+func readFile(path string) []byte {
 	f, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)

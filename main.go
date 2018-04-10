@@ -1,14 +1,14 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	"github.com/aws/aws-sdk-go/aws"
-	"fmt"
-	"github.com/aws/aws-lambda-go/lambda"
+	"log"
 	"os"
 	"strings"
 )
