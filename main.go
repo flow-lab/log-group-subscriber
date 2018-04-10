@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"os"
@@ -28,9 +27,7 @@ func Handler(request events.CloudWatchEvent) (string, error) {
 	var functionArn = os.Getenv("DESTINATION_FUNCTION_ARN")
 
 	sess := session.Must(session.NewSession())
-	client := cloudwatchlogs.New(sess, &aws.Config{
-		Region: aws.String(endpoints.EuWest1RegionID),
-	})
+	client := cloudwatchlogs.New(sess, &aws.Config{})
 
 	_, err := ProcessEvent(functionArn, client)
 	if err != nil {
@@ -46,7 +43,7 @@ func ProcessEvent(functionArn string, logs cloudwatchlogsiface.CloudWatchLogsAPI
 		return nil, fmt.Errorf("get log groups: %v", err)
 	}
 
-	missingSubscription, err := getLogGroupsWithMissingSubscription(logGroups.LogGroups, &functionArn, logs)
+	missingSubscription, err := getLogGroupsWithMissingSubscription(logGroups, &functionArn, logs)
 	if err != nil {
 		return nil, fmt.Errorf("get log with missing subscriptions: %v", err)
 	}
@@ -59,9 +56,19 @@ func ProcessEvent(functionArn string, logs cloudwatchlogsiface.CloudWatchLogsAPI
 	return result, nil
 }
 
-func GetLogGroups(logs cloudwatchlogsiface.CloudWatchLogsAPI) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
+func GetLogGroups(logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]*cloudwatchlogs.LogGroup, error) {
+	var logGroups []*cloudwatchlogs.LogGroup
 	input := cloudwatchlogs.DescribeLogGroupsInput{}
-	return logs.DescribeLogGroups(&input)
+	err := logs.DescribeLogGroupsPages(&input, func(page *cloudwatchlogs.DescribeLogGroupsOutput, lastPage bool) bool {
+		for _, logGroup := range page.LogGroups {
+			logGroups = append(logGroups, logGroup)
+		}
+		return true
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describe log Groups: %v", err)
+	}
+	return logGroups, nil
 }
 
 func DescribeSubscriptionFilters(logGroupName *string, logs cloudwatchlogsiface.CloudWatchLogsAPI) (*cloudwatchlogs.DescribeSubscriptionFiltersOutput, error) {

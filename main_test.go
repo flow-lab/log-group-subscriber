@@ -27,7 +27,7 @@ func TestGetLogGroups(t *testing.T) {
 
 	check(t, err)
 	assert.NotNil(t, logGroups)
-	assert.Equal(t, 2, len(logGroups.LogGroups))
+	assert.Equal(t, 2, len(logGroups))
 }
 
 func TestDescribeSubscriptionFilters(t *testing.T) {
@@ -45,9 +45,9 @@ func TestPutSubscriptionFilter(t *testing.T) {
 
 	var logGroups []main.LogGroup
 	test := "test"
-	logGroup:= main.LogGroup{
+	logGroup := main.LogGroup{
 		LogGroupName: &test,
-		FunctionArn: &test,
+		FunctionArn:  &test,
 	}
 	logGroups = append(logGroups, logGroup)
 
@@ -77,6 +77,17 @@ func (m *mockCloudWatchLogsClient) DescribeLogGroups(input *cloudwatchlogs.Descr
 		panic(err)
 	}
 	return &describeLogGroupsOutput, nil
+}
+
+func (m *mockCloudWatchLogsClient) DescribeLogGroupsPages(input *cloudwatchlogs.DescribeLogGroupsInput, f func(*cloudwatchlogs.DescribeLogGroupsOutput, bool) bool) error {
+	var inputJson = readFile("testdata/describeLogGroups-output.json")
+	var describeLogGroupsOutput cloudwatchlogs.DescribeLogGroupsOutput
+	err := json.Unmarshal(inputJson, &describeLogGroupsOutput)
+	if err != nil {
+		panic(err)
+	}
+	f(&describeLogGroupsOutput, true)
+	return nil
 }
 
 func (m *mockCloudWatchLogsClient) DescribeSubscriptionFilters(*cloudwatchlogs.DescribeSubscriptionFiltersInput) (*cloudwatchlogs.DescribeSubscriptionFiltersOutput, error) {
