@@ -10,6 +10,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestProcessEvent(t *testing.T) {
+	cwl := &mockCloudWatchLogsClient{}
+
+	functionArn := "arn:aws:lambda:eu-west-1:111111111111:function:DatadogLogs"
+	result, err := main.ProcessEvent(functionArn, cwl)
+
+	assert.Nil(t, err)
+	assert.Len(t, result, 2)
+}
+
 func TestGetLogGroups(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
@@ -24,7 +34,7 @@ func TestDescribeSubscriptionFilters(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
 	filterNamePrefix := "test"
-	subscriptionFilters, err := main.DescribeSubscriptionFilters(&filterNamePrefix,cwl)
+	subscriptionFilters, err := main.DescribeSubscriptionFilters(&filterNamePrefix, cwl)
 
 	check(t, err)
 	assert.Equal(t, 1, len(subscriptionFilters.SubscriptionFilters))
@@ -34,9 +44,17 @@ func TestPutSubscriptionFilter(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
 	var logGroups []main.LogGroup
-	main.PutSubscriptionFilter(logGroups, cwl)
+	test := "test"
+	logGroup:= main.LogGroup{
+		LogGroupName: &test,
+		FunctionArn: &test,
+	}
+	logGroups = append(logGroups, logGroup)
 
-	// TODO [grokrz]: implement
+	result, err := main.PutSubscriptionFilter(logGroups, cwl)
+
+	assert.Nil(t, err)
+	assert.Len(t, result, 1)
 }
 
 func check(t *testing.T, err error) {

@@ -24,7 +24,7 @@ func main() {
 }
 
 func Handler(request events.CloudWatchEvent) (string, error) {
-	log.Printf("Processing Lambda request %s\n", request)
+	log.Printf("processing event %s", request)
 	var functionArn = os.Getenv("DESTINATION_FUNCTION_ARN")
 
 	sess := session.Must(session.NewSession())
@@ -32,41 +32,31 @@ func Handler(request events.CloudWatchEvent) (string, error) {
 		Region: aws.String(endpoints.EuWest1RegionID),
 	})
 
-	logGroups, err := GetLogGroups(client)
-	check(err)
+	_, err := ProcessEvent(functionArn, client)
+	if err != nil {
+		panic(fmt.Errorf("unable to complete: %v", err))
+	}
 
-	missingSubscription := getLogGroupsWithMissingSubscription(logGroups.LogGroups, &functionArn, client)
-	PutSubscriptionFilter(missingSubscription, client)
-
-	return "Event processed", nil
+	return "event processed", nil
 }
 
-func getLogGroupsWithMissingSubscription(groups []*cloudwatchlogs.LogGroup, functionArn *string, logs cloudwatchlogsiface.CloudWatchLogsAPI) []LogGroup {
-	var result []LogGroup
-	for _, element := range groups {
-		if hasSubscriptionFilter(element, functionArn, logs) == false {
-			l := LogGroup{
-				LogGroupName: element.LogGroupName,
-				FunctionArn:  functionArn,
-			}
-			log.Printf("%s is missing subscription for %s", *l.LogGroupName, *functionArn)
-			result = append(result, l)
-		}
+func ProcessEvent(functionArn string, logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]string, error) {
+	logGroups, err := GetLogGroups(logs)
+	if err != nil {
+		return nil, fmt.Errorf("get log groups: %v", err)
 	}
-	return result
-}
 
-func hasSubscriptionFilter(logGroup *cloudwatchlogs.LogGroup, functionArn *string, logs cloudwatchlogsiface.CloudWatchLogsAPI) bool {
-	var exists bool
-	subscriptionFilters, err := DescribeSubscriptionFilters(logGroup.LogGroupName, logs)
-	check(err)
-	for _, subsFilter := range subscriptionFilters.SubscriptionFilters {
-		if *functionArn == *subsFilter.DestinationArn {
-			exists = true
-			break
-		}
+	missingSubscription, err := getLogGroupsWithMissingSubscription(logGroups.LogGroups, &functionArn, logs)
+	if err != nil {
+		return nil, fmt.Errorf("get log with missing subscriptions: %v", err)
 	}
-	return exists
+
+	result, err := PutSubscriptionFilter(missingSubscription, logs)
+	if err != nil {
+		return nil, fmt.Errorf("get log with missing subscriptions: %v", err)
+	}
+
+	return result, nil
 }
 
 func GetLogGroups(logs cloudwatchlogsiface.CloudWatchLogsAPI) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
@@ -81,7 +71,8 @@ func DescribeSubscriptionFilters(logGroupName *string, logs cloudwatchlogsiface.
 	return logs.DescribeSubscriptionFilters(&input)
 }
 
-func PutSubscriptionFilter(logGroups []LogGroup, logs cloudwatchlogsiface.CloudWatchLogsAPI) {
+func PutSubscriptionFilter(logGroups []LogGroup, logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]string, error) {
+	var result []string
 	level := ""
 	for _, logGroup := range logGroups {
 		filterName := fmt.Sprintf("%s-%s", strings.Replace(*logGroup.LogGroupName, "/", "", -1), "SubscriptionFilter")
@@ -91,16 +82,45 @@ func PutSubscriptionFilter(logGroups []LogGroup, logs cloudwatchlogsiface.CloudW
 			DestinationArn: logGroup.FunctionArn,
 			FilterPattern:  &level,
 		}
-		log.Printf("About to put subscription filter %s for %s", filterName, *logGroup.LogGroupName)
+		log.Printf("put subscription filter %s for %s", filterName, *logGroup.LogGroupName)
 		_, err := logs.PutSubscriptionFilter(&input)
-		check(err)
-
+		if err != nil {
+			return result, fmt.Errorf("putSubscriptionFilter for %s: %v", *logGroup.LogGroupName, err)
+		}
+		result = append(result, *logGroup.LogGroupName)
 		fmt.Printf("PutSubscriptionFilter for %s", *logGroup.LogGroupName)
 	}
+	return result, nil
 }
 
-func check(err error) {
-	if err != nil {
-		panic(err)
+func getLogGroupsWithMissingSubscription(groups []*cloudwatchlogs.LogGroup, functionArn *string, logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]LogGroup, error) {
+	var result []LogGroup
+	for _, element := range groups {
+		hasSubscriptionFilter, err := hasSubscriptionFilter(element, functionArn, logs)
+		if err != nil {
+			return nil, fmt.Errorf("getLogGroupsWithMissingSubscription: %v", err)
+		}
+		if hasSubscriptionFilter == false {
+			logGroup := LogGroup{
+				LogGroupName: element.LogGroupName,
+				FunctionArn:  functionArn,
+			}
+			log.Printf("%s is missing subscription for %s", *logGroup.LogGroupName, *functionArn)
+			result = append(result, logGroup)
+		}
 	}
+	return result, nil
+}
+
+func hasSubscriptionFilter(logGroup *cloudwatchlogs.LogGroup, functionArn *string, logs cloudwatchlogsiface.CloudWatchLogsAPI) (bool, error) {
+	subscriptionFilters, err := DescribeSubscriptionFilters(logGroup.LogGroupName, logs)
+	if err != nil {
+		return false, fmt.Errorf("describe subscription filters: %s", err)
+	}
+	for _, subsFilter := range subscriptionFilters.SubscriptionFilters {
+		if *functionArn == *subsFilter.DestinationArn {
+			return true, nil
+		}
+	}
+	return false, nil
 }
