@@ -28,7 +28,6 @@ func init() {
 const (
 	RequestIO = "X-Request-ID"
 	Service   = "service"
-	Host      = "host"
 )
 
 func InitLog(requestId string) *log.Entry {
