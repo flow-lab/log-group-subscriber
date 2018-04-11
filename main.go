@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 )
@@ -18,18 +20,35 @@ type LogGroup struct {
 	FunctionArn  *string
 }
 
-func main() {
-	lambda.Start(Handler)
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
 }
 
-func Handler(request events.CloudWatchEvent) (string, error) {
-	log.Printf("processing event %s", request)
+const (
+	RequestIO = "X-Request-ID"
+	Service   = "service"
+	Host      = "host"
+)
+
+func InitLog(requestId string) *log.Entry {
+	return log.WithFields(log.Fields{
+		RequestIO: &requestId,
+		Service:   "log-group-subscriber",
+	})
+}
+
+func Handler(ctx context.Context, event events.CloudWatchEvent) (string, error) {
+	log.Printf("processing event %s", event)
 	var functionArn = os.Getenv("DESTINATION_FUNCTION_ARN")
+
+	lambdaContext, _ := lambdacontext.FromContext(ctx)
+	requestLogger := InitLog(lambdaContext.AwsRequestID)
 
 	sess := session.Must(session.NewSession())
 	client := cloudwatchlogs.New(sess, &aws.Config{})
 
-	_, err := ProcessEvent(functionArn, client)
+	_, err := ProcessEvent(functionArn, client, requestLogger)
 	if err != nil {
 		panic(fmt.Errorf("unable to complete: %v", err))
 	}
@@ -37,18 +56,18 @@ func Handler(request events.CloudWatchEvent) (string, error) {
 	return "event processed", nil
 }
 
-func ProcessEvent(functionArn string, logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]string, error) {
+func ProcessEvent(functionArn string, logs cloudwatchlogsiface.CloudWatchLogsAPI, log *log.Entry) ([]string, error) {
 	logGroups, err := GetLogGroups(logs)
 	if err != nil {
 		return nil, fmt.Errorf("get log groups: %v", err)
 	}
 
-	missingSubscription, err := getLogGroupsWithMissingSubscription(logGroups, &functionArn, logs)
+	missingSubscription, err := getLogGroupsWithMissingSubscription(logGroups, &functionArn, logs, log)
 	if err != nil {
 		return nil, fmt.Errorf("get log with missing subscriptions: %v", err)
 	}
 
-	result, err := PutSubscriptionFilter(missingSubscription, logs)
+	result, err := PutSubscriptionFilter(missingSubscription, logs, log)
 	if err != nil {
 		return nil, fmt.Errorf("get log with missing subscriptions: %v", err)
 	}
@@ -78,7 +97,7 @@ func DescribeSubscriptionFilters(logGroupName *string, logs cloudwatchlogsiface.
 	return logs.DescribeSubscriptionFilters(&input)
 }
 
-func PutSubscriptionFilter(logGroups []LogGroup, logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]string, error) {
+func PutSubscriptionFilter(logGroups []LogGroup, logs cloudwatchlogsiface.CloudWatchLogsAPI, log *log.Entry) ([]string, error) {
 	var result []string
 	level := ""
 	for _, logGroup := range logGroups {
@@ -95,12 +114,12 @@ func PutSubscriptionFilter(logGroups []LogGroup, logs cloudwatchlogsiface.CloudW
 			return result, fmt.Errorf("putSubscriptionFilter for %s: %v", *logGroup.LogGroupName, err)
 		}
 		result = append(result, *logGroup.LogGroupName)
-		fmt.Printf("PutSubscriptionFilter for %s", *logGroup.LogGroupName)
+		log.Printf("PutSubscriptionFilter for %s", *logGroup.LogGroupName)
 	}
 	return result, nil
 }
 
-func getLogGroupsWithMissingSubscription(groups []*cloudwatchlogs.LogGroup, functionArn *string, logs cloudwatchlogsiface.CloudWatchLogsAPI) ([]LogGroup, error) {
+func getLogGroupsWithMissingSubscription(groups []*cloudwatchlogs.LogGroup, functionArn *string, logs cloudwatchlogsiface.CloudWatchLogsAPI, log *log.Entry) ([]LogGroup, error) {
 	var result []LogGroup
 	for _, element := range groups {
 		hasSubscriptionFilter, err := hasSubscriptionFilter(element, functionArn, logs)
@@ -130,4 +149,8 @@ func hasSubscriptionFilter(logGroup *cloudwatchlogs.LogGroup, functionArn *strin
 		}
 	}
 	return false, nil
+}
+
+func main() {
+	lambda.Start(Handler)
 }
