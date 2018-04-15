@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log-group-subscriber"
 	"testing"
+	"github.com/flow-lab/dlog"
 )
 
 const requestId = "1-581cf771-a006649127e371903a2de979"
@@ -16,7 +17,7 @@ func TestProcessEvent(t *testing.T) {
 	cwl := &mockCloudWatchLogsClient{}
 
 	functionArn := "arn:aws:lambda:eu-west-1:111111111111:function:DatadogLogs"
-	result, err := main.ProcessEvent(functionArn, cwl, main.InitLog(requestId))
+	result, err := main.ProcessEvent(functionArn, cwl, dlog.NewRequestLogger(requestId, "test"))
 
 	assert.Nil(t, err)
 	assert.Len(t, result, 2)
@@ -53,7 +54,7 @@ func TestPutSubscriptionFilter(t *testing.T) {
 	}
 	logGroups = append(logGroups, logGroup)
 
-	result, err := main.PutSubscriptionFilter(logGroups, cwl, main.InitLog(requestId))
+	result, err := main.PutSubscriptionFilter(logGroups, cwl, dlog.NewRequestLogger(requestId, "test"))
 
 	assert.Nil(t, err)
 	assert.Len(t, result, 1)

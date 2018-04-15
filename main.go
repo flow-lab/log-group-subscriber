@@ -10,9 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
+	log "github.com/sirupsen/logrus"
+	"github.com/flow-lab/dlog"
 )
 
 type LogGroup struct {
@@ -20,29 +21,11 @@ type LogGroup struct {
 	FunctionArn  *string
 }
 
-func init() {
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetOutput(os.Stdout)
-}
-
-const (
-	RequestIO = "X-Request-ID"
-	Service   = "service"
-)
-
-func InitLog(requestId string) *log.Entry {
-	return log.WithFields(log.Fields{
-		RequestIO: &requestId,
-		Service:   "log-group-subscriber",
-	})
-}
-
 func Handler(ctx context.Context, event events.CloudWatchEvent) (string, error) {
-	log.Printf("processing event %s", event)
 	var functionArn = os.Getenv("DESTINATION_FUNCTION_ARN")
 
 	lambdaContext, _ := lambdacontext.FromContext(ctx)
-	requestLogger := InitLog(lambdaContext.AwsRequestID)
+	requestLogger := dlog.NewRequestLogger(lambdaContext.AwsRequestID,"log-group-subscriber")
 
 	sess := session.Must(session.NewSession())
 	client := cloudwatchlogs.New(sess, &aws.Config{})
