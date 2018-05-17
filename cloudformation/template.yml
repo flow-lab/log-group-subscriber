@@ -10,6 +10,10 @@ Parameters:
     Description: Deployment bucket name
     Type: String
     MinLength: 1
+  DeploymentFile:
+      Description: Deployment file name
+      Type: String
+      MinLength: 1
 
 Resources:
   SubscriberFunctionRole:
@@ -37,7 +41,7 @@ Resources:
     Properties:
       CodeUri:
         Bucket: !Ref DeploymentBucket
-        Key: log-group-subscriber/deployment.zip
+        Key: !Sub 'log-group-subscriber/${DeploymentFile}'
       MemorySize: 128
       Description: Subscribes log streams to datadog logs function
       Handler: main

@@ -26,13 +26,14 @@ func Handler(ctx context.Context, event events.CloudWatchEvent) (string, error) 
 
 	lambdaContext, _ := lambdacontext.FromContext(ctx)
 	requestLogger := dlog.NewRequestLogger(lambdaContext.AwsRequestID,"log-group-subscriber")
+	requestLogger.Info("About to update subscription filters ...")
 
 	sess := session.Must(session.NewSession())
 	client := cloudwatchlogs.New(sess, &aws.Config{})
 
 	_, err := ProcessEvent(functionArn, client, requestLogger)
 	if err != nil {
-		requestLogger.Infof("unable to complete: %v", err)
+		requestLogger.Errorf("unable to complete: %v", err)
 		panic(fmt.Errorf("unable to complete: %v", err))
 	}
 
