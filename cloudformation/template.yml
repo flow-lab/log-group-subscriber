@@ -16,7 +16,7 @@ Parameters:
       MinLength: 1
 
 Resources:
-  SubscriberFunctionRole:
+  FunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -36,7 +36,7 @@ Resources:
                   - 'logs:*'
                 Resource: '*'
 
-  SubscriberFunction:
+  Function:
     Type: 'AWS::Serverless::Function'
     Properties:
       CodeUri:
@@ -47,12 +47,12 @@ Resources:
       Handler: main
       Runtime: go1.x
       Timeout: 30
-      Role: !GetAtt SubscriberFunctionRole.Arn
+      Role: !GetAtt FunctionRole.Arn
       Environment:
         Variables:
           DESTINATION_FUNCTION_ARN: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${FunctionName}'
       Events:
-        ScheduleSubscribeFunction:
+        ScheduleFunction:
           Type: Schedule
           Properties:
             Schedule: rate(5 minutes)
