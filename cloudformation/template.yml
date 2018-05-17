@@ -9,6 +9,7 @@ Parameters:
   DeploymentBucket:
     Description: Deployment bucket name
     Type: String
+    MinLength: 1
 
 Resources:
   SubscriberFunctionRole:
@@ -34,7 +35,9 @@ Resources:
   SubscriberFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      CodeUri: !Sub 's3://${deployment-bucket}/log-group-subscriber/deployment.zip'
+      CodeUri:
+        Bucket: !Ref DeploymentBucket
+        Key: log-group-subscriber/deployment.zip
       MemorySize: 128
       Description: Subscribes log streams to datadog logs function
       Handler: main

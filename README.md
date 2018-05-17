@@ -33,10 +33,9 @@ aws s3 cp deployment.zip s3://deployment-bucket-s3bucket-../log-group-subscriber
 To deploy cloudformation run:
 ```sh
 aws cloudformation deploy \
-    --stack-name log-group-subscriber \
-    --template-file cloudformation/template.yml \
-    --parameter-overrides FunctionName=DatadogLogs \
-    --parameter-overrides DeploymentBucket=deployment-bucket-s3bucket-.. \
-    --capabilities CAPABILITY_IAM \
-    --profile cloudformation@flowlabdev
+   --stack-name log-group-subscriber \
+   --template-file cloudformation/template.yml \
+   --parameter-overrides FunctionName=DatadogLogs DeploymentBucket=deployment-bucket-s3bucket-... \
+   --capabilities CAPABILITY_IAM \
+   --profile cloudformation@flowlabdev
 ```
