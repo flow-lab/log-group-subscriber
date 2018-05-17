@@ -32,6 +32,7 @@ func Handler(ctx context.Context, event events.CloudWatchEvent) (string, error) 
 
 	_, err := ProcessEvent(functionArn, client, requestLogger)
 	if err != nil {
+		requestLogger.Infof("unable to complete: %v", err)
 		panic(fmt.Errorf("unable to complete: %v", err))
 	}
 
@@ -108,7 +109,7 @@ func getLogGroupsWithMissingSubscription(groups []*cloudwatchlogs.LogGroup, func
 		if err != nil {
 			return nil, fmt.Errorf("getLogGroupsWithMissingSubscription: %v", err)
 		}
-		if hasSubscriptionFilter == false {
+		if hasSubscriptionFilter == false && *element.LogGroupName != "/aws/lambda/DatadogLogs" {
 			logGroup := LogGroup{
 				LogGroupName: element.LogGroupName,
 				FunctionArn:  functionArn,

@@ -6,9 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"log-group-subscriber"
+	"github.com/log-group-subscriber"
 	"testing"
 	"github.com/flow-lab/dlog"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
 const requestId = "1-581cf771-a006649127e371903a2de979"
@@ -30,7 +31,7 @@ func TestGetLogGroups(t *testing.T) {
 
 	check(t, err)
 	assert.NotNil(t, logGroups)
-	assert.Equal(t, 2, len(logGroups))
+	assert.Equal(t, 3, len(logGroups))
 }
 
 func TestDescribeSubscriptionFilters(t *testing.T) {
@@ -104,6 +105,9 @@ func (m *mockCloudWatchLogsClient) DescribeSubscriptionFilters(*cloudwatchlogs.D
 }
 
 func (m *mockCloudWatchLogsClient) PutSubscriptionFilter(input *cloudwatchlogs.PutSubscriptionFilterInput) (*cloudwatchlogs.PutSubscriptionFilterOutput, error) {
+	if *input.LogGroupName == "/aws/lambda/DatadogLogs" {
+		return nil, expression.InvalidParameterError{}
+	}
 	return &cloudwatchlogs.PutSubscriptionFilterOutput{}, nil
 }
 
