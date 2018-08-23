@@ -1,4 +1,4 @@
-## AWS log group subscriber [![Build Status](https://travis-ci.org/flow-lab/log-group-subscriber.svg?branch=master)](https://travis-ci.org/flow-lab/log-group-subscriber)
+## AWS log group subscriber [![Build Status](https://travis-ci.org/flow-lab/log-group-subscriber.svg?branch=master)](https://travis-ci.org/flow-lab/log-group-subscriber) [![codecov](https://codecov.io/gh/flow-lab/log-group-subscriber/branch/master/graph/badge.svg)](https://codecov.io/gh/flow-lab/log-group-subscriber)
 
 Lambda function that creates subscription filters for other lambda function.
 
