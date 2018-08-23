@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/flow-lab/dlog"
+	"github.com/flow-lab/log-group-subscriber"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"github.com/log-group-subscriber"
 	"testing"
-	"github.com/flow-lab/dlog"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
 const requestId = "1-581cf771-a006649127e371903a2de979"
